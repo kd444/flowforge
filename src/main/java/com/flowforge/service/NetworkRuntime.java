@@ -114,9 +114,22 @@ public class NetworkRuntime {
                 "demandScale", r.demandScale(),
                 "forecast", regionForecast.getOrDefault(r.id(), 0.0)
         )).toList());
+        int onHand = live.fulfillmentNodes().stream().mapToInt(NetworkNode::onHand).sum();
+        int capacity = live.fulfillmentNodes().stream().mapToInt(NetworkNode::storageCapacity).sum();
+        double forecastUnits = regionForecast.values().stream().mapToDouble(Double::doubleValue).sum();
         body.put("laneCount", live.lanes().size());
         body.put("fulfillmentNodes", live.fulfillmentNodes().size());
         body.put("demandRegions", live.regions().size());
+        body.put("data", Map.of(
+                "source", "M5 retail demand schema",
+                "historyDays", properties.getForecast().getHistoryDays(),
+                "skuCount", catalog.size(),
+                "horizonDays", properties.getForecast().getHorizonDays(),
+                "onHandUnits", onHand,
+                "storageCapacity", capacity,
+                "dailyForecastUnits", Math.round(forecastUnits * 10.0) / 10.0,
+                "forecastMethod", "seasonal-naive + Croston"
+        ));
         return body;
     }
 
