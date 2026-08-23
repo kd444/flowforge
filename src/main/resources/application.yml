@@ -1,0 +1,64 @@
+server:
+  port: ${PORT:8080}
+  compression:
+    enabled: true
+
+spring:
+  application:
+    name: flowforge
+  jackson:
+    default-property-inclusion: non_null
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 200ms
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  health:
+    redis:
+      enabled: false
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: FlowForge
+    description: Multi-echelon inventory placement and fulfillment routing engine
+    version: 1.0.0
+
+flowforge:
+  redis:
+    enabled: ${REDIS_ENABLED:false}
+    key-prefix: "ff:"
+    ttl-seconds: 3600
+  network:
+    sla-hours-default: 24
+  forecast:
+    history-days: 420
+    horizon-days: 14
+    sku-count: 8
+  simulation:
+    default-days: 90
+    seed: 42
+  agent:
+    provider: ${LLM_PROVIDER:heuristic}
+    openai-api-key: ${OPENAI_API_KEY:}
+    openai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    model: ${LLM_MODEL:gpt-4o-mini}
+    max-fill-drop-pp: 2.0
+    max-cost-increase-pct: 5.0
+
+springdoc:
+  api-docs:
+    path: /api/docs
+  swagger-ui:
+    path: /swagger-ui.html

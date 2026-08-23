@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FlowForge — Forth Grid Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #14110d;
+      --paper: #e7d6b8;
+      --brass: #c9a227;
+      --red: #b42318;
+      --fog: #8a8476;
+      --line: rgba(231, 214, 184, 0.16);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--ink); color: var(--paper); }
+    body {
+      font-family: "Source Serif 4", Georgia, serif;
+      background-image:
+        radial-gradient(ellipse at 10% 0%, rgba(180, 35, 24, 0.16), transparent 42%),
+        radial-gradient(ellipse at 90% 110%, rgba(201, 162, 39, 0.12), transparent 40%);
+    }
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: end;
+      padding: 18px 28px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand {
+      font-family: "Big Shoulders Display", sans-serif;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      font-size: clamp(2.2rem, 5vw, 4.2rem);
+      line-height: 0.85;
+      text-transform: uppercase;
+    }
+    .brand span { color: var(--red); }
+    .stamp {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--brass);
+      text-align: center;
+    }
+    .meta { text-align: right; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--fog); }
+    main {
+      display: grid;
+      grid-template-columns: 280px 1fr 340px;
+      gap: 18px;
+      padding: 18px 28px 28px;
+      min-height: calc(100vh - 110px);
+    }
+    @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+    .panel {
+      border: 1px solid var(--line);
+      background: rgba(20, 17, 13, 0.72);
+      padding: 16px;
+    }
+    h2 {
+      font-family: "Big Shoulders Display", sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 1.3rem;
+      margin: 0 0 12px;
+    }
+    button, select, input {
+      font-family: "IBM Plex Mono", monospace;
+      background: transparent;
+      color: var(--paper);
+      border: 1px solid var(--brass);
+      padding: 8px 10px;
+      width: 100%;
+    }
+    button {
+      cursor: pointer;
+      background: var(--red);
+      border-color: var(--red);
+      color: #fff8ee;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+    button.ghost { background: transparent; color: var(--brass); border-color: var(--brass); }
+    label {
+      display: block;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--fog);
+      margin: 10px 0 4px;
+    }
+    .kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+    .kpi div { border: 1px solid var(--line); padding: 10px; }
+    .kpi b {
+      display: block;
+      font-family: "Big Shoulders Display", sans-serif;
+      font-size: 1.8rem;
+      color: var(--brass);
+    }
+    #map {
+      width: 100%;
+      height: min(68vh, 720px);
+      background: #0e0c09;
+      border: 1px solid var(--line);
+    }
+    .log {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      min-height: 140px;
+      max-height: 280px;
+      overflow: auto;
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+      margin-top: 10px;
+    }
+    .lane { color: var(--fog); font-size: 13px; line-height: 1.45; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">Flow<span>Forge</span></div>
+    <div class="stamp">Forth Grid · 12 nodes · 60 regions · classified ops</div>
+    <div class="meta">SCOTLAND FULFILLMENT<br />INVENTORY + ROUTING ENGINE</div>
+  </header>
+  <main>
+    <aside class="panel">
+      <h2>Dispatch</h2>
+      <label for="region">Demand region</label>
+      <select id="region"></select>
+      <label for="hour">Depart hour</label>
+      <input id="hour" type="number" min="0" max="23" value="9" />
+      <label for="sla">SLA hours</label>
+      <input id="sla" type="number" min="1" max="72" value="24" />
+      <label for="algo">Algorithm</label>
+      <select id="algo">
+        <option>AUTO</option>
+        <option>ASTAR</option>
+        <option>BIDIRECTIONAL_DIJKSTRA</option>
+      </select>
+      <button id="routeBtn" type="button">Plot route</button>
+      <button class="ghost" id="placeBtn" type="button">Place inventory</button>
+      <p class="lane" id="routeMeta">Select a region to bind a source node and multi-modal lane under the delivery promise.</p>
+    </aside>
+    <section>
+      <svg id="map" viewBox="0 0 420 620" role="img" aria-label="Scottish fulfillment schematic"></svg>
+    </section>
+    <aside class="panel">
+      <h2>Ledger</h2>
+      <div class="kpi">
+        <div><span>Fill</span><b id="kpiFill">—</b></div>
+        <div><span>Cost Δ</span><b id="kpiCost">—</b></div>
+        <div><span>p99</span><b id="kpiP99">—</b></div>
+        <div><span>Agent</span><b id="kpiAgent">—</b></div>
+      </div>
+      <button id="simBtn" type="button">Run 90-day duel</button>
+      <button class="ghost" id="agentBtn" type="button">Agent tick</button>
+      <button class="ghost" id="benchBtn" type="button">Routing bench</button>
+      <div class="log" id="log">Awaiting board...</div>
+    </aside>
+  </main>
+  <script src="/board.js"></script>
+</body>
+</html>
