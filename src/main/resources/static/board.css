@@ -88,6 +88,79 @@ h1 span { color: var(--rust); }
   color: var(--fog);
 }
 
+.provenance {
+  margin: 14px 32px 0;
+  border: 1px solid var(--line);
+  background: rgba(22, 19, 15, 0.78);
+  padding: 12px 16px;
+  position: relative;
+  z-index: 2;
+}
+.provenance ul {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.provenance span {
+  display: block;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fog);
+}
+.provenance b {
+  display: block;
+  margin-top: 4px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--paper);
+}
+
+.brief {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0 0;
+}
+.brief div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+}
+.brief dt { color: var(--fog); }
+.brief dd { margin: 0; color: var(--paper); }
+
+.result {
+  border-top: 1px solid var(--line);
+  margin-top: 14px;
+  padding-top: 12px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  max-height: 320px;
+  overflow: auto;
+}
+.result table { width: 100%; border-collapse: collapse; }
+.result th, .result td {
+  text-align: left;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+}
+.result th {
+  color: var(--fog);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
 main {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr) 340px;
@@ -100,6 +173,7 @@ main {
 @media (max-width: 1100px) {
   .mast, main { grid-template-columns: 1fr; }
   .seal, .clock { text-align: left; transform: none; }
+  .provenance ul { grid-template-columns: 1fr 1fr; }
 }
 
 .panel, .chart {
@@ -250,18 +324,7 @@ button.ghost { background: transparent; color: var(--brass); border-color: var(-
   color: var(--brass);
 }
 
-.log {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 11px;
-  white-space: pre-wrap;
-  min-height: 150px;
-  max-height: 280px;
-  overflow: auto;
-  border-top: 1px solid var(--line);
-  margin: 14px 0 0;
-  padding-top: 12px;
-  color: var(--paper);
-}
+.kpi b.pending { font-size: 0.95rem; color: var(--fog); font-family: "IBM Plex Mono", monospace; }
 
 .appear {
   animation: rise 700ms ease both;

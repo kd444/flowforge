@@ -26,6 +26,16 @@
     </div>
   </header>
 
+  <section class="provenance appear" id="provenance">
+    <p class="eyebrow">Data in this board</p>
+    <ul>
+      <li><span>Demand</span><b id="provSource">M5 retail schema</b></li>
+      <li><span>History / SKUs</span><b id="provHistory">—</b></li>
+      <li><span>On hand / capacity</span><b id="provStock">—</b></li>
+      <li><span>Daily forecast</span><b id="provForecast">—</b></li>
+    </ul>
+  </section>
+
   <main>
     <aside class="panel dispatch appear" style="animation-delay: 80ms">
       <h2>Dispatch</h2>
@@ -49,7 +59,12 @@
       </select>
       <button id="routeBtn" type="button">Plot route</button>
       <button class="ghost" id="placeBtn" type="button">Place inventory</button>
-      <p class="hint" id="routeMeta">Bind a stocked source and a multi-modal lane to the delivery promise.</p>
+      <dl class="brief" id="brief">
+        <div><dt>Assigned node</dt><dd id="briefNode">—</dd></div>
+        <div><dt>Forecast / day</dt><dd id="briefForecast">—</dd></div>
+        <div><dt>Stock at assignee</dt><dd id="briefStock">—</dd></div>
+      </dl>
+      <p class="hint" id="routeMeta">Pick a region to see its forecast and stock, then plot a route.</p>
       <ol class="hops" id="hops"></ol>
     </aside>
 
@@ -70,15 +85,17 @@
     <aside class="panel ledger appear" style="animation-delay: 240ms">
       <h2>Ledger</h2>
       <div class="kpi">
-        <div><span>Fill rate</span><b id="kpiFill">—</b></div>
-        <div><span>Cost vs greedy</span><b id="kpiCost">—</b></div>
-        <div><span>Routing p99</span><b id="kpiP99">—</b></div>
-        <div><span>Agent</span><b id="kpiAgent">—</b></div>
+        <div><span>On-hand units</span><b id="kpiStock">—</b></div>
+        <div><span>Daily forecast</span><b id="kpiForecast">—</b></div>
+        <div><span>Fill (90-day)</span><b class="pending" id="kpiFill">run compare</b></div>
+        <div><span>Cost vs greedy</span><b class="pending" id="kpiCost">run compare</b></div>
       </div>
-      <button id="simBtn" type="button">Run 90-day duel</button>
-      <button class="ghost" id="agentBtn" type="button">Agent tick</button>
-      <button class="ghost" id="benchBtn" type="button">Routing bench</button>
-      <pre class="log" id="log">Awaiting board…</pre>
+      <button id="simBtn" type="button">Compare to greedy</button>
+      <button class="ghost" id="placeBtn2" type="button">Place inventory</button>
+      <button class="ghost" id="agentBtn" type="button">Verify agent edit</button>
+      <div class="result" id="result">
+        <p class="hint" id="log">Results land here as tables, not raw JSON. Routing, placement, and the 90-day comparison all use the same on-hand stock and M5 forecast shown above.</p>
+      </div>
     </aside>
   </main>
   <script src="/board.js"></script>

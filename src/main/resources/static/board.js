@@ -1,8 +1,5 @@
 (function () {
   const $ = (id) => document.getElementById(id);
-  const log = (msg) => {
-    $("log").textContent = msg;
-  };
   const project = (lat, lon) => {
     const x = (lon + 7.35) * 56 + 48;
     const y = (61.2 - lat) * 70 + 28;
@@ -13,9 +10,27 @@
     Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, String(value)));
     return node;
   };
+  const clear = (el) => {
+    while (el.firstChild) {
+      el.removeChild(el.firstChild);
+    }
+  };
+  const text = (el, value) => {
+    el.textContent = value;
+  };
+  const addLine = (parent, value, className) => {
+    const p = document.createElement("p");
+    if (className) {
+      p.className = className;
+    }
+    p.textContent = value;
+    parent.appendChild(p);
+    return p;
+  };
 
-  let network = { nodes: [], regions: [] };
+  let network = { nodes: [], regions: [], data: {} };
   let routeHops = [];
+  let selectedRegionId = "R01";
 
   function loc(id) {
     return network.nodes.find((n) => n.id === id)
@@ -23,15 +38,52 @@
       || { lat: 56.5, lon: -4 };
   }
 
+  function selectedRegion() {
+    return network.regions.find((r) => r.id === selectedRegionId) || network.regions[0];
+  }
+
+  function nodeById(id) {
+    return network.nodes.find((n) => n.id === id);
+  }
+
   function tickClock() {
     $("clock").textContent = new Date().toLocaleTimeString("en-GB", { hour12: false });
   }
 
+  function showResult(title, bodyFn) {
+    const box = $("result");
+    clear(box);
+    const heading = document.createElement("p");
+    heading.className = "hint";
+    heading.textContent = title;
+    box.appendChild(heading);
+    bodyFn(box);
+  }
+
+  function table(box, headers, rows) {
+    const tbl = document.createElement("table");
+    const head = document.createElement("tr");
+    headers.forEach((h) => {
+      const th = document.createElement("th");
+      th.textContent = h;
+      head.appendChild(th);
+    });
+    tbl.appendChild(head);
+    rows.forEach((row) => {
+      const tr = document.createElement("tr");
+      row.forEach((cell) => {
+        const td = document.createElement("td");
+        td.textContent = cell;
+        tr.appendChild(td);
+      });
+      tbl.appendChild(tr);
+    });
+    box.appendChild(tbl);
+  }
+
   function draw() {
     const svg = $("map");
-    while (svg.firstChild) {
-      svg.removeChild(svg.firstChild);
-    }
+    clear(svg);
     const defs = svgEl("defs", {});
     const glow = svgEl("filter", { id: "glow" });
     glow.appendChild(svgEl("feGaussianBlur", { stdDeviation: "2.2", result: "b" }));
@@ -48,17 +100,18 @@
       stroke: "#8b8374",
       "stroke-width": "1.3"
     }));
-    svg.appendChild(svgEl("path", {
-      d: "M248 92 C 268 86 286 104 278 126 C 270 142 252 138 248 120 Z",
-      fill: "#1c241c",
-      stroke: "#8b8374",
-      "stroke-width": "0.8",
-      opacity: "0.7"
-    }));
 
-    network.regions.forEach((region) => {
-      const [x, y] = project(region.lat, region.lon);
-      svg.appendChild(svgEl("circle", { cx: x, cy: y, r: 2.2, fill: "#7d9a78", opacity: "0.75" }));
+    const region = selectedRegion();
+    network.regions.forEach((item) => {
+      const [x, y] = project(item.lat, item.lon);
+      const active = item.id === selectedRegionId;
+      svg.appendChild(svgEl("circle", {
+        cx: x,
+        cy: y,
+        r: active ? 5 : 2.2,
+        fill: active ? "#f0e2c4" : "#7d9a78",
+        opacity: active ? "1" : "0.7"
+      }));
     });
 
     if (routeHops.length) {
@@ -84,9 +137,10 @@
       .filter((node) => node.type !== "TRANSFER_HUB" || node.capacity > 0)
       .forEach((node) => {
         const [x, y] = project(node.lat, node.lon);
+        const assigned = region && region.assignedNodeId === node.id;
         const fill = node.type === "NATIONAL_DC" ? "#b42318" : node.type === "REGIONAL_DC" ? "#e07a2f" : "#d4b15a";
         const r = node.type === "NATIONAL_DC" ? 7.5 : node.type === "REGIONAL_DC" ? 5.8 : 4.2;
-        svg.appendChild(svgEl("circle", { cx: x, cy: y, r: r + 3, fill: fill, opacity: "0.18" }));
+        svg.appendChild(svgEl("circle", { cx: x, cy: y, r: r + (assigned ? 6 : 3), fill, opacity: assigned ? "0.35" : "0.18" }));
         svg.appendChild(svgEl("circle", { cx: x, cy: y, r, fill }));
         const label = svgEl("text", {
           x: x + 9,
@@ -102,22 +156,30 @@
 
   function fillRegions() {
     const select = $("region");
-    while (select.firstChild) {
-      select.removeChild(select.firstChild);
-    }
+    clear(select);
     network.regions.forEach((region) => {
       const option = document.createElement("option");
       option.value = region.id;
       option.textContent = region.id + " · " + region.name;
       select.appendChild(option);
     });
+    select.value = selectedRegionId;
+  }
+
+  function renderBrief() {
+    const region = selectedRegion();
+    if (!region) {
+      return;
+    }
+    const node = nodeById(region.assignedNodeId);
+    text($("briefNode"), region.assignedNodeId + (node ? " · " + node.name : ""));
+    text($("briefForecast"), Number(region.forecast || 0).toFixed(1) + " units");
+    text($("briefStock"), node ? node.onHand + " / " + node.capacity : "—");
   }
 
   function renderHops(hops) {
     const list = $("hops");
-    while (list.firstChild) {
-      list.removeChild(list.firstChild);
-    }
+    clear(list);
     hops.forEach((hop) => {
       const item = document.createElement("li");
       item.textContent = hop.fromId + " → " + hop.toId + "  " + hop.mode + "  £" + hop.cost.toFixed(2);
@@ -127,9 +189,7 @@
 
   function renderDocks() {
     const docks = $("docks");
-    while (docks.firstChild) {
-      docks.removeChild(docks.firstChild);
-    }
+    clear(docks);
     network.nodes
       .filter((node) => node.capacity > 0)
       .forEach((node) => {
@@ -140,8 +200,7 @@
         const bar = document.createElement("div");
         bar.className = "bar";
         const fill = document.createElement("span");
-        const pct = node.capacity ? Math.min(100, (node.onHand / node.capacity) * 100) : 0;
-        fill.style.width = pct.toFixed(1) + "%";
+        fill.style.width = Math.min(100, (node.onHand / node.capacity) * 100).toFixed(1) + "%";
         bar.appendChild(fill);
         const qty = document.createElement("span");
         qty.textContent = String(node.onHand);
@@ -152,77 +211,115 @@
       });
   }
 
+  function renderProvenance() {
+    const data = network.data || {};
+    text($("provSource"), data.source || "M5 retail schema");
+    text($("provHistory"), (data.historyDays || "—") + " days · " + (data.skuCount || "—") + " SKUs");
+    text($("provStock"), (data.onHandUnits || 0).toLocaleString() + " / " + (data.storageCapacity || 0).toLocaleString());
+    text($("provForecast"), (data.dailyForecastUnits || 0) + " units · " + (data.forecastMethod || ""));
+    text($("kpiStock"), String(data.onHandUnits || 0));
+    text($("kpiForecast"), String(data.dailyForecastUnits || 0));
+    $("netStamp").textContent = network.fulfillmentNodes + " nodes · " + network.demandRegions + " regions";
+  }
+
+  function placeInventory() {
+    return fetch("/api/v1/placement", { method: "POST" })
+      .then((res) => res.json())
+      .then((data) => {
+        showResult(
+          "Min-cost flow placed " + data.totalFlow + " units using on-hand stock and the M5 daily forecast. Unmet " + data.unmetDemand + ".",
+          (box) => {
+            table(box, ["Node", "Units"], Object.entries(data.unitsAtNode));
+          }
+        );
+      });
+  }
+
   async function boot() {
     const res = await fetch("/api/v1/network");
     network = await res.json();
-    $("netStamp").textContent = network.fulfillmentNodes + " nodes · " + network.demandRegions + " regions";
+    selectedRegionId = network.regions[0] ? network.regions[0].id : "R01";
     fillRegions();
+    renderProvenance();
+    renderBrief();
     draw();
     renderDocks();
-    log("Board live. " + network.fulfillmentNodes + " fulfillment nodes, "
-      + network.demandRegions + " demand regions, " + network.laneCount + " lanes.");
+    showResult("Live state loaded from the engine — not a chat wrapper.", (box) => {
+      addLine(box, "Demand: " + (network.data && network.data.source) + ", " + (network.data && network.data.historyDays) + " days, " + (network.data && network.data.skuCount) + " store-item series.", "hint");
+      addLine(box, "Placement and routing both read the on-hand column under the map and the region forecast in Dispatch.", "hint");
+    });
   }
 
+  $("region").onchange = () => {
+    selectedRegionId = $("region").value;
+    routeHops = [];
+    renderBrief();
+    draw();
+  };
+
   $("routeBtn").onclick = async () => {
-    const payload = {
-      regionId: $("region").value,
-      departHour: Number($("hour").value),
-      slaHours: Number($("sla").value),
-      algorithm: $("algo").value,
-      requireStock: true
-    };
+    selectedRegionId = $("region").value;
     const res = await fetch("/api/v1/route", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        regionId: selectedRegionId,
+        departHour: Number($("hour").value),
+        slaHours: Number($("sla").value),
+        algorithm: $("algo").value,
+        requireStock: true
+      })
     });
     const data = await res.json();
     routeHops = data.hops || [];
     draw();
     renderHops(routeHops);
     $("routeMeta").textContent = data.slaMet
-      ? data.sourceNodeId + " → " + data.regionId + " · " + data.algorithm
-        + " · £" + Number(data.cost).toFixed(2) + " · " + data.etaHours + "h"
+      ? data.sourceNodeId + " → " + data.regionId + " · " + data.algorithm + " · £" + Number(data.cost).toFixed(2) + " · " + data.etaHours + "h"
       : "No SLA-feasible path from stocked nodes.";
-    log(JSON.stringify(data, null, 2));
+    showResult("Route uses current on-hand stock and time-of-day lane costs.", (box) => {
+      table(box, ["From", "To", "Mode", "£"], (data.hops || []).map((hop) => [
+        hop.fromId, hop.toId, hop.mode, hop.cost.toFixed(2)
+      ]));
+    });
   };
 
-  $("placeBtn").onclick = async () => {
-    const data = await (await fetch("/api/v1/placement", { method: "POST" })).json();
-    const lines = Object.entries(data.unitsAtNode).map(([key, value]) => key.padEnd(8) + " " + value);
-    log("Min-cost flow placed " + data.totalFlow + " units · cost " + Number(data.totalCost).toFixed(1)
-      + " · unmet " + data.unmetDemand + "\n" + lines.join("\n"));
-  };
+  $("placeBtn").onclick = placeInventory;
+  $("placeBtn2").onclick = placeInventory;
 
   $("simBtn").onclick = async () => {
-    log("Running deterministic 90-day duel…");
+    showResult("Running 90-day comparison on the same stock and forecast…", () => {});
     const data = await (await fetch("/api/v1/simulate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ days: 90, seed: 42 })
     })).json();
-    $("kpiFill").textContent = (data.flowforge.fillRate * 100).toFixed(1) + "%";
-    $("kpiCost").textContent = "-" + (data.costReduction * 100).toFixed(1) + "%";
-    const ok = data.flowforge.invariants && data.flowforge.invariants.ok;
-    log("FlowForge fill " + (data.flowforge.fillRate * 100).toFixed(2) + "%  cost " + data.flowforge.totalCost.toFixed(0)
-      + "\nGreedy    fill " + (data.greedy.fillRate * 100).toFixed(2) + "%  cost " + data.greedy.totalCost.toFixed(0)
-      + "\nCost reduction " + (data.costReduction * 100).toFixed(2) + "%"
-      + "\nInvariants " + (ok ? "HOLD" : "BROKEN"));
+    $("kpiFill").classList.remove("pending");
+    $("kpiCost").classList.remove("pending");
+    text($("kpiFill"), (data.flowforge.fillRate * 100).toFixed(1) + "%");
+    text($("kpiCost"), "-" + (data.costReduction * 100).toFixed(1) + "%");
+    showResult("FlowForge vs nearest-node last-mile greedy. Invariants " + (data.flowforge.invariants.ok ? "hold" : "failed") + ".", (box) => {
+      table(box, ["Policy", "Fill", "Cost"], [
+        ["FlowForge", (data.flowforge.fillRate * 100).toFixed(2) + "%", Math.round(data.flowforge.totalCost).toLocaleString()],
+        ["Greedy", (data.greedy.fillRate * 100).toFixed(2) + "%", Math.round(data.greedy.totalCost).toLocaleString()]
+      ]);
+    });
   };
 
   $("agentBtn").onclick = async () => {
     const data = await (await fetch("/api/v1/agent/tick?applyIfAccepted=true", { method: "POST" })).json();
-    $("kpiAgent").textContent = data.status;
-    log(data.status + ": " + data.reason + "\n" + JSON.stringify(data.proposal, null, 2));
-  };
-
-  $("benchBtn").onclick = async () => {
-    const data = await (await fetch("/api/v1/bench/routing?iterations=300", { method: "POST" })).json();
-    $("kpiP99").textContent = data.p99Ms + "ms";
-    log("Routing bench n=" + data.iterations + "\np50 " + data.p50Ms + "ms · p95 " + data.p95Ms + "ms · p99 " + data.p99Ms + "ms");
+    showResult(data.status + " — " + data.reason, (box) => {
+      addLine(box, (data.proposal && data.proposal.rationale) || "Heuristic planner proposed stock and lane edits.", "hint");
+      const deltas = data.proposal && data.proposal.safetyStockDeltas ? Object.entries(data.proposal.safetyStockDeltas) : [];
+      if (deltas.length) {
+        table(box, ["Node", "Safety-stock delta"], deltas);
+      }
+    });
   };
 
   tickClock();
   setInterval(tickClock, 1000);
-  boot().catch((err) => log("Board failed: " + err.message));
+  boot().catch((err) => {
+    showResult("Board failed to load: " + err.message, () => {});
+  });
 })();
