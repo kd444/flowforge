@@ -6,6 +6,12 @@ Placement is a min-cost flow on a demand-forecast-weighted graph. Routing is a c
 
 The live board is a Java / Spring Boot API with a Forth Grid control UI. Path labels can be precomputed in Redis. The stack deploys as Docker on AWS ECS.
 
+## Forth Grid
+
+![Forth Grid control board](docs/forth-grid.png)
+
+Dispatch picks a demand region, SLA, and algorithm. The plate shows the 12-node / 60-region Scottish network. The ledger reports on-hand stock, the M5 forecast, and placement or simulation results.
+
 ## What it does
 
 - Places inventory across **12 fulfillment nodes** serving **60 demand regions**
